@@ -167,12 +167,12 @@ router.post('/accept/:userId', asyncHandler(async (req: Request, res: Response) 
 // @access  Private
 router.post('/reject/:userId', asyncHandler(async (req: Request, res: Response) => {
   const senderUserId = req.params.userId;
-  const currentUserId = req.user.id;
+  const currentUserId = req.user!.id;
 
   const currentUser = await User.findById(currentUserId);
 
   // Check if request exists
-  if (!currentUser.friendRequests.includes(senderUserId)) {
+  if (!currentUser!.friendRequests.some(id => id.toString() === senderUserId)) {
     return res.status(400).json({
       success: false,
       error: 'No friend request from this user'

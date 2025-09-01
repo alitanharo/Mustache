@@ -11,7 +11,7 @@ const router = express.Router();
 // @desc    Get user's conversations
 // @access  Private
 router.get('/conversations', asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+  const userId = req.user!.id;
 
   // Get all messages where user is sender or recipient
   const messages = await Message.find({
@@ -58,7 +58,7 @@ router.get('/conversations', asyncHandler(async (req: Request, res: Response) =>
 // @access  Private
 router.get('/:conversationId', asyncHandler(async (req: Request, res: Response) => {
   const { conversationId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user!.id;
 
   // Verify user is part of this conversation
   const message = await Message.findOne({ conversationId });
@@ -83,21 +83,21 @@ router.get('/:conversationId', asyncHandler(async (req: Request, res: Response) 
     .sort({ createdAt: 1 });
 
   // Mark messages as read if current user is recipient
-  const unreadMessages = messages.filter(msg => 
+  const unreadMessages = messages.filter(msg =>
     msg.recipient._id.toString() === userId && !msg.isRead
   );
 
   if (unreadMessages.length > 0) {
     await Message.updateMany(
-      { 
+      {
         _id: { $in: unreadMessages.map(msg => msg._id) },
-        recipient: userId 
+        recipient: userId
       },
-      { 
-        $set: { 
-          isRead: true, 
-          readAt: new Date() 
-        } 
+      {
+        $set: {
+          isRead: true,
+          readAt: new Date()
+        }
       }
     );
   }
@@ -135,7 +135,7 @@ router.post('/', [
   }
 
   const { recipientId, content, messageType = 'text' } = req.body;
-  const senderId = req.user.id;
+  const senderId = req.user!.id;
 
   // Check if trying to send message to self
   if (senderId === recipientId) {
@@ -156,7 +156,7 @@ router.post('/', [
 
   // Check if recipient is blocked
   const sender = await User.findById(senderId);
-  if (sender.blockedUsers.includes(recipientId)) {
+  if (sender!.blockedUsers.includes(recipientId)) {
     return res.status(403).json({
       success: false,
       error: 'Cannot send message to blocked user'
@@ -203,7 +203,7 @@ router.post('/', [
 // @access  Private
 router.put('/:messageId/read', asyncHandler(async (req: Request, res: Response) => {
   const { messageId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user!.id;
 
   const message = await Message.findById(messageId);
   if (!message) {
@@ -238,7 +238,7 @@ router.put('/:messageId/read', asyncHandler(async (req: Request, res: Response) 
 // @access  Private
 router.delete('/:messageId', asyncHandler(async (req: Request, res: Response) => {
   const { messageId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user!.id;
 
   const message = await Message.findById(messageId);
   if (!message) {
@@ -274,7 +274,7 @@ router.delete('/:messageId', asyncHandler(async (req: Request, res: Response) =>
 // @desc    Get unread message count
 // @access  Private
 router.get('/unread/count', asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+  const userId = req.user!.id;
 
   const unreadCount = await Message.countDocuments({
     recipient: userId,
