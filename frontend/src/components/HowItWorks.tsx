@@ -31,38 +31,38 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section id="how-it-works" className="py-20 px-4 md:px-8 bg-muted/30">
+    <section id="how-it-works" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 bg-muted/30">
       <div className="container mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 px-2">
             Making Friends is <span className="bg-gradient-primary bg-clip-text text-transparent">Simple</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
             Follow our 4-step process to connect with like-minded men and build meaningful friendships.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-12 sm:mb-16">
           {steps.map((step, index) => (
             <Card 
               key={step.step}
-              className="p-8 bg-gradient-card border-border hover:shadow-card transition-all duration-300 text-center relative animate-fade-in"
+              className="p-6 sm:p-8 bg-gradient-card border-border hover:shadow-card transition-all duration-300 text-center relative animate-fade-in"
               style={{ animationDelay: `${index * 0.2}s` }}
             >
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+              <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs sm:text-sm">
                   {step.step}
                 </div>
               </div>
               
-              <div className="mt-8 mb-6">
-                <div className="p-4 rounded-xl bg-primary/10 inline-block">
-                  <step.icon className="h-8 w-8 text-primary" />
+              <div className="mt-6 sm:mt-8 mb-4 sm:mb-6">
+                <div className="p-3 sm:p-4 rounded-xl bg-primary/10 inline-block">
+                  <step.icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                 </div>
               </div>
               
-              <h3 className="text-xl font-semibold mb-4">{step.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">{step.title}</h3>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                 {step.description}
               </p>
             </Card>
@@ -72,7 +72,7 @@ const HowItWorks = () => {
         <div className="text-center">
           <Button 
             size="lg" 
-            className="bg-gradient-primary hover:shadow-glow transition-all duration-300 text-lg px-8 py-6"
+            className="bg-gradient-primary hover:shadow-glow transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
           >
             Start Building Friendships
           </Button>

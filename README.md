@@ -1,73 +1,129 @@
-# Welcome to your Lovable project
+# Mustache - Social Networking App for Men
 
-## Project info
+A GoFriendly clone built with modern web technologies, designed specifically for men to connect, make friends, and build meaningful relationships.
 
-**URL**: https://lovable.dev/projects/2a8e774c-0411-45ac-90ae-e9ecc91255f0
+## 🏗️ Project Structure
 
-## How can I edit this code?
+```
+Mustache/
+├── frontend/          # React + Vite frontend application
+│   ├── src/          # React source code
+│   ├── public/       # Static assets
+│   ├── package.json  # Frontend dependencies
+│   └── README.md     # Frontend documentation
+├── backend/           # Node.js + Express backend API
+│   ├── src/          # Backend source code
+│   ├── package.json  # Backend dependencies
+│   └── README.md     # Backend documentation
+└── README.md         # This file
+```
 
-There are several ways of editing your application.
+## 🚀 Quick Start
 
-**Use Lovable**
+### Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Frontend will run on: http://localhost:8080
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2a8e774c-0411-45ac-90ae-e9ecc91255f0) and start prompting.
+### Backend (Node.js + Express)
+```bash
+cd backend
+npm install
+cp env.example .env
+# Edit .env with your MongoDB connection string
+npm run dev
+```
+Backend will run on: http://localhost:5000
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Tech Stack
 
-**Use your preferred IDE**
+### Frontend
+- **React 18** with TypeScript
+- **Vite** for fast development and building
+- **Tailwind CSS** for styling
+- **Shadcn/ui** for UI components
+- **React Router** for navigation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Backend
+- **Node.js** with TypeScript
+- **Express.js** framework
+- **MongoDB Atlas** database
+- **Mongoose** ODM
+- **JWT** authentication
+- **Socket.IO** for real-time features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🌟 Features
 
-Follow these steps:
+- **User Authentication** - Secure login/registration
+- **Profile Management** - Complete user profiles with photos
+- **Friend System** - Send, accept, reject friend requests
+- **Real-time Chat** - WebSocket-based messaging
+- **Discovery Engine** - Find potential friends by interests
+- **Privacy Controls** - Granular privacy settings
+- **Mobile Responsive** - Works on all devices
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 📱 Pages
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **Home** - Landing page with features
+- **Login/Register** - User authentication
+- **Profile** - User profile management
+- **Discover** - Find new friends
+- **Messages** - Real-time chat system
+- **Friends** - Manage friend connections
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🔧 Development
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Prerequisites
+- Node.js 16+ 
+- npm or yarn
+- MongoDB Atlas account
+
+### Environment Setup
+1. Clone the repository
+2. Set up frontend: `cd frontend && npm install`
+3. Set up backend: `cd backend && npm install`
+4. Copy `backend/env.example` to `backend/.env`
+5. Add your MongoDB connection string to `.env`
+
+### Running Both Services
+```bash
+# Terminal 1 - Frontend
+cd frontend
+npm run dev
+
+# Terminal 2 - Backend  
+cd backend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 📚 Documentation
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- [Frontend Documentation](./frontend/README.md)
+- [Backend API Documentation](./backend/README.md)
 
-**Use GitHub Codespaces**
+## 🤝 Contributing
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-## What technologies are used for this project?
+## 📄 License
 
-This project is built with:
+This project is for educational and personal use.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🆘 Support
 
-## How can I deploy this project?
+For issues and questions:
+1. Check the documentation in each folder
+2. Review error logs
+3. Verify environment configuration
+4. Test database connectivity
 
-Simply open [Lovable](https://lovable.dev/projects/2a8e774c-0411-45ac-90ae-e9ecc91255f0) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+**Note**: This is a full-stack social networking application. Both frontend and backend must be running for full functionality.
