@@ -255,6 +255,18 @@ router.delete('/photos/:photoIndex', asyncHandler(async (req: Request, res: Resp
   });
 }));
 
+// @route   GET /api/users/me
+// @desc    Get current user profile (alias)
+// @access  Private
+router.get('/me', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const user = await User.findById(req.user!.id).select('-password');
+
+  res.json({
+    success: true,
+    data: { user }
+  });
+}));
+
 // @route   GET /api/users/:id
 // @desc    Get public user profile by ID
 // @access  Private

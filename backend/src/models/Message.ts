@@ -42,7 +42,6 @@ const messageSchema = new Schema<IMessage>({
   },
   conversationId: {
     type: String,
-    required: true,
     index: true
   }
 }, {
