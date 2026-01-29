@@ -129,6 +129,15 @@ and CORS origin in `.env`.
 - **Frontend**: Vercel, Netlify, or any static host
 - **Backend**: Render, Railway, Fly.io, or a VM/Container with PM2
 
+### Vercel Deployment (Frontend)
+1. Import the GitHub repo into Vercel.
+2. Set the **Root Directory** to `frontend`.
+3. Build command: `npm run build`
+4. Output directory: `dist`
+5. Environment variables:
+   - `VITE_API_URL` = your deployed backend URL (e.g. `https://mustache-api.onrender.com`)
+6. Ensure backend `CORS_ORIGIN` matches the deployed Vercel URL.
+
 ## 📚 Documentation
 
 - [Frontend Documentation](./frontend/README.md)
