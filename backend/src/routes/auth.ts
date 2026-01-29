@@ -8,10 +8,15 @@ const router = express.Router();
 
 // Generate JWT Token
 const generateToken = (userId: string): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+
   return jwt.sign(
     { userId },
-    process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    secret as jwt.Secret,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as jwt.SignOptions
   );
 };
 
@@ -44,14 +49,15 @@ router.post('/register', [
   body('interests')
     .isArray({ min: 3 })
     .withMessage('Please select at least 3 interests')
-], asyncHandler(async (req: Request, res: Response) => {
+], asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       errors: errors.array()
     });
+    return;
   }
 
   const {
@@ -67,10 +73,11 @@ router.post('/register', [
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: 'User with this email already exists'
     });
+    return;
   }
 
   // Create new user
@@ -87,7 +94,7 @@ router.post('/register', [
   await user.save();
 
   // Generate token
-  const token = generateToken(user._id.toString());
+  const token = generateToken(String(user._id));
 
   // Return user data (without password) and token
   res.status(201).json({
@@ -123,14 +130,15 @@ router.post('/login', [
   body('password')
     .notEmpty()
     .withMessage('Password is required')
-], asyncHandler(async (req: Request, res: Response) => {
+], asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       errors: errors.array()
     });
+    return;
   }
 
   const { email, password } = req.body;
@@ -138,19 +146,21 @@ router.post('/login', [
   // Check if user exists
   const user = await User.findOne({ email });
   if (!user) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       error: 'Invalid credentials'
     });
+    return;
   }
 
   // Check password
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       error: 'Invalid credentials'
     });
+    return;
   }
 
   // Update online status
@@ -159,7 +169,7 @@ router.post('/login', [
   await user.save();
 
   // Generate token
-  const token = generateToken(user._id.toString());
+  const token = generateToken(String(user._id));
 
   res.json({
     success: true,

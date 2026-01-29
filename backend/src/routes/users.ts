@@ -45,14 +45,15 @@ router.put('/profile', [
     .optional()
     .isArray({ min: 1 })
     .withMessage('Interests must be an array with at least 1 item')
-], asyncHandler(async (req: Request, res: Response) => {
+], asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       errors: errors.array()
     });
+    return;
   }
 
   const updateFields = req.body;
@@ -92,14 +93,15 @@ router.put('/privacy', [
     .optional()
     .isBoolean()
     .withMessage('allowFriendRequests must be a boolean')
-], asyncHandler(async (req: Request, res: Response) => {
+], asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       errors: errors.array()
     });
+    return;
   }
 
   const user = await User.findByIdAndUpdate(
@@ -139,24 +141,26 @@ router.put('/preferences', [
     .optional()
     .isArray()
     .withMessage('Interests must be an array')
-], asyncHandler(async (req: Request, res: Response) => {
+], asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       errors: errors.array()
     });
+    return;
   }
 
   // Validate age range
   if (req.body.ageRange) {
     const { min, max } = req.body.ageRange;
     if (min && max && min > max) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: 'Minimum age cannot be greater than maximum age'
       });
+      return;
     }
   }
 
@@ -184,14 +188,15 @@ router.post('/photos', [
   body('photoUrl')
     .isURL()
     .withMessage('Please provide a valid photo URL')
-], asyncHandler(async (req: Request, res: Response) => {
+], asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       errors: errors.array()
     });
+    return;
   }
 
   const { photoUrl } = req.body;
@@ -212,29 +217,32 @@ router.post('/photos', [
 // @route   DELETE /api/users/photos/:photoIndex
 // @desc    Remove photo from user profile
 // @access  Private
-router.delete('/photos/:photoIndex', asyncHandler(async (req: Request, res: Response) => {
+router.delete('/photos/:photoIndex', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const photoIndex = parseInt(req.params.photoIndex);
   
   if (isNaN(photoIndex) || photoIndex < 0) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: 'Invalid photo index'
     });
+    return;
   }
 
   const user = await User.findById(req.user!.id);
   if (!user) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: 'User not found'
     });
+    return;
   }
 
   if (photoIndex >= user.photos.length) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: 'Photo index out of range'
     });
+    return;
   }
 
   user.photos.splice(photoIndex, 1);
@@ -250,34 +258,45 @@ router.delete('/photos/:photoIndex', asyncHandler(async (req: Request, res: Resp
 // @route   GET /api/users/:id
 // @desc    Get public user profile by ID
 // @access  Private
-router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
+router.get('/:id', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = await User.findById(req.params.id)
     .select('firstName lastName age location bio interests photos privacySettings')
     .lean();
 
   if (!user) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: 'User not found'
     });
+    return;
   }
 
   // Check privacy settings
   if (user.privacySettings.profileVisibility === 'private') {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       error: 'This profile is private'
     });
+    return;
   }
 
   // If profile is friends-only, check if they are friends
   if (user.privacySettings.profileVisibility === 'friends') {
     const currentUser = await User.findById(req.user!.id);
+    if (!currentUser) {
+      res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+      return;
+    }
+
     if (!currentUser.friends.some(friendId => friendId.toString() === user._id.toString())) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         error: 'This profile is only visible to friends'
       });
+      return;
     }
   }
 

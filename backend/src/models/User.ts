@@ -212,7 +212,7 @@ userSchema.index({
 userSchema.set('toJSON', {
   virtuals: true,
   transform: function(doc, ret) {
-    delete ret.password;
+    delete (ret as { password?: string }).password;
     return ret;
   }
 });

@@ -99,6 +99,36 @@ cd backend
 npm run dev
 ```
 
+## 📦 Production Build & Deployment
+
+### Frontend
+```bash
+cd frontend
+npm run build
+```
+Deploy the `frontend/dist` folder to your static host (Nginx, Vercel, Netlify, etc.).
+
+### Backend
+```bash
+cd backend
+npm run build
+npm start
+```
+
+Set `NODE_ENV=production` and configure your MongoDB Atlas connection, JWT secret,
+and CORS origin in `.env`.
+
+### Environment Checklist
+- `MONGODB_URI` points to your production database
+- `JWT_SECRET` is a long, random secret
+- `CORS_ORIGIN` matches your deployed frontend URL
+- `UPLOAD_PATH` exists and is writable (if using file uploads)
+- Ensure your MongoDB Atlas IP allowlist includes your server
+
+### Suggested Hosting
+- **Frontend**: Vercel, Netlify, or any static host
+- **Backend**: Render, Railway, Fly.io, or a VM/Container with PM2
+
 ## 📚 Documentation
 
 - [Frontend Documentation](./frontend/README.md)

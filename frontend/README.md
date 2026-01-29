@@ -1,28 +1,40 @@
+# Mustache Frontend
 
-## Follow these steps:
+React + Vite frontend for the Mustache social networking app.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## ⚙️ Requirements
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Node.js 16+
+- npm
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🚀 Development
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
+The app runs on http://localhost:8080 and expects the backend at http://localhost:5000.
 
-## What technologies are used for this project?
+## 🧰 Build for Production
 
-This project is built with:
+```bash
+npm run build
+npm run preview
+```
 
+The production build outputs to `dist/`.
+
+## 🔧 Configuration
+
+- Update the backend URL in `src/lib/api.ts` if you deploy the API elsewhere.
+- Ensure CORS in the backend allows your deployed frontend origin.
+
+## 🧩 Tech Stack
+
+- React 18
 - Vite
 - TypeScript
-- React
-- shadcn-ui
 - Tailwind CSS
-
+- shadcn/ui
