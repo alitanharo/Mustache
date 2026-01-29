@@ -138,6 +138,18 @@ and CORS origin in `.env`.
    - `VITE_API_URL` = your deployed backend URL (e.g. `https://mustache-api.onrender.com`)
 6. Ensure backend `CORS_ORIGIN` matches the deployed Vercel URL.
 
+### Render Deployment (Backend - Free)
+1. Create a free Render account and click **New > Web Service**.
+2. Connect the GitHub repo.
+3. Select the `backend` directory as the root (Render blueprint uses `backend/render.yaml`).
+4. Build Command: `npm install && npm run build`
+5. Start Command: `npm start`
+6. Add Environment Variables:
+   - `MONGODB_URI` = your MongoDB Atlas connection string
+   - `JWT_SECRET` = a long random secret
+   - `CORS_ORIGIN` = your deployed Vercel URL (e.g. `https://mustache.vercel.app`)
+7. Deploy and copy the backend URL into Vercel as `VITE_API_URL`.
+
 ## 📚 Documentation
 
 - [Frontend Documentation](./frontend/README.md)
