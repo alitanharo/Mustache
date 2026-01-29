@@ -102,7 +102,7 @@ router.get('/:conversationId', asyncHandler(async (req: Request, res: Response) 
     );
   }
 
-  res.json({
+  return res.json({
     success: true,
     data: { messages }
   });
@@ -191,7 +191,7 @@ router.post('/', [
     conversationId: message.conversationId
   });
 
-  res.status(201).json({
+  return res.status(201).json({
     success: true,
     message: 'Message sent successfully',
     data: { message }
@@ -226,7 +226,7 @@ router.put('/:messageId/read', asyncHandler(async (req: Request, res: Response) 
   message.readAt = new Date();
   await message.save();
 
-  res.json({
+  return res.json({
     success: true,
     message: 'Message marked as read',
     data: { message }
@@ -264,7 +264,7 @@ router.delete('/:messageId', asyncHandler(async (req: Request, res: Response) =>
     conversationId: message.conversationId
   });
 
-  res.json({
+  return res.json({
     success: true,
     message: 'Message deleted successfully'
   });

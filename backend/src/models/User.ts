@@ -160,30 +160,32 @@ userSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// Pre-save middleware to hash password and calculate age
+// Pre-validate middleware to calculate age so required validation passes
+userSchema.pre('validate', function(next) {
+  if (this.dateOfBirth) {
+    const today = new Date();
+    const birthDate = new Date(this.dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    this.age = age;
+  }
+
+  next();
+});
+
+// Pre-save middleware to hash password
 userSchema.pre('save', async function(next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
 
   try {
-    // Hash password
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
-
-    // Calculate age
-    if (this.dateOfBirth) {
-      const today = new Date();
-      const birthDate = new Date(this.dateOfBirth);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      
-      this.age = age;
-    }
-
     next();
   } catch (error) {
     next(error as Error);

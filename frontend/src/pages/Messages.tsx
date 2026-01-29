@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,106 +7,108 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Search, Send, MoreVertical, Phone, Video, Image, 
-  Smile, Paperclip, Mic, ArrowLeft, Online, MessageSquare
+  Smile, Paperclip, Mic, ArrowLeft, MessageSquare
 } from "lucide-react";
 import mustacheLogo from "@/assets/mustache-logo.jpg";
+import { apiRequest } from "@/lib/api";
+import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/AuthContext";
+
+type Conversation = {
+  conversationId: string;
+  otherUser: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    photos?: string[];
+  };
+  lastMessage: {
+    content: string;
+    createdAt: string;
+  };
+  unreadCount: number;
+};
+
+type ChatMessage = {
+  _id: string;
+  sender: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    photos?: string[];
+  };
+  recipient: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    photos?: string[];
+  };
+  content: string;
+  createdAt: string;
+};
 
 const Messages = () => {
   const [selectedChat, setSelectedChat] = useState(0);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Mock data - in real app this would come from backend
-  const conversations = [
-    {
-      id: 1,
-      user: {
-        firstName: "Michael",
-        lastName: "Chen",
-        avatar: mustacheLogo,
-        isOnline: true,
-        lastSeen: "2 min ago"
-      },
-      lastMessage: "Hey! Are you free this weekend for that hiking trip?",
-      timestamp: "2:30 PM",
-      unreadCount: 2,
-      isActive: true
-    },
-    {
-      id: 2,
-      user: {
-        firstName: "David",
-        lastName: "Rodriguez",
-        avatar: mustacheLogo,
-        isOnline: false,
-        lastSeen: "1 hour ago"
-      },
-      lastMessage: "Thanks for the gym tips yesterday!",
-      timestamp: "1:45 PM",
-      unreadCount: 0,
-      isActive: false
-    },
-    {
-      id: 3,
-      user: {
-        firstName: "Alex",
-        lastName: "Thompson",
-        avatar: mustacheLogo,
-        isOnline: true,
-        lastSeen: "5 min ago"
-      },
-      lastMessage: "The new coffee shop downtown is amazing!",
-      timestamp: "12:20 PM",
-      unreadCount: 1,
-      isActive: false
-    }
-  ];
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   const currentChat = conversations[selectedChat];
 
-  const mockMessages = [
-    {
-      id: 1,
-      senderId: 1,
-      text: "Hey! Are you free this weekend for that hiking trip?",
-      timestamp: "2:30 PM",
-      isOwn: false
-    },
-    {
-      id: 2,
-      senderId: 0,
-      text: "Hey Michael! Yeah, I'm definitely interested. What's the plan?",
-      timestamp: "2:32 PM",
-      isOwn: true
-    },
-    {
-      id: 3,
-      senderId: 1,
-      text: "Thinking of heading to Mount Tam on Saturday morning. There's a great trail that's about 6 miles round trip.",
-      timestamp: "2:33 PM",
-      isOwn: false
-    },
-    {
-      id: 4,
-      senderId: 0,
-      text: "That sounds perfect! What time were you thinking?",
-      timestamp: "2:35 PM",
-      isOwn: true
-    },
-    {
-      id: 5,
-      senderId: 1,
-      text: "How about meeting at the trailhead at 8 AM? We can grab coffee in Mill Valley first if you want.",
-      timestamp: "2:36 PM",
-      isOwn: false
+  const loadConversations = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest<{ data: { conversations: Conversation[] } }>("/api/messages/conversations");
+      setConversations(response.data.conversations || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load conversations";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      // TODO: Send message to backend
-      console.log("Sending message:", messageInput);
+  const loadMessages = async (conversationId: string) => {
+    try {
+      const response = await apiRequest<{ data: { messages: ChatMessage[] } }>(`/api/messages/${conversationId}`);
+      setMessages(response.data.messages || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load messages";
+      toast.error(message);
+    }
+  };
+
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  useEffect(() => {
+    if (currentChat?.conversationId) {
+      loadMessages(currentChat.conversationId);
+    } else {
+      setMessages([]);
+    }
+  }, [currentChat?.conversationId]);
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !currentChat) return;
+    try {
+      const response = await apiRequest<{ data: { message: ChatMessage } }>("/api/messages", {
+        method: "POST",
+        body: {
+          recipientId: currentChat.otherUser._id,
+          content: messageInput
+        }
+      });
+      setMessages((prev) => [...prev, response.data.message]);
       setMessageInput("");
+      loadConversations();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send message";
+      toast.error(message);
     }
   };
 
@@ -118,8 +120,8 @@ const Messages = () => {
   };
 
   const filteredConversations = conversations.filter(conv =>
-    conv.user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.user.lastName.toLowerCase().includes(searchQuery.toLowerCase())
+    conv.otherUser.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv.otherUser.lastName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -144,52 +146,53 @@ const Messages = () => {
           {/* Conversations List */}
           <ScrollArea className="h-[calc(100vh-120px)]">
             <div className="p-2">
-              {filteredConversations.map((conversation, index) => (
-                <div
-                  key={conversation.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedChat === index
-                      ? "bg-primary/10 border border-primary/20"
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => setSelectedChat(index)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={conversation.user.avatar} alt="Avatar" />
-                        <AvatarFallback>
-                          {conversation.user.firstName[0]}{conversation.user.lastName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      {conversation.user.isOnline && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-background rounded-full" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold truncate">
-                          {conversation.user.firstName} {conversation.user.lastName}
-                        </h3>
-                        <span className="text-xs text-muted-foreground">
-                          {conversation.timestamp}
-                        </span>
+              {isLoading ? (
+                <div className="p-4 text-muted-foreground">Loading conversations...</div>
+              ) : (
+                filteredConversations.map((conversation, index) => (
+                  <div
+                    key={conversation.conversationId}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      selectedChat === index
+                        ? "bg-primary/10 border border-primary/20"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => setSelectedChat(index)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={conversation.otherUser.photos?.[0] || mustacheLogo} alt="Avatar" />
+                          <AvatarFallback>
+                            {conversation.otherUser.firstName[0]}{conversation.otherUser.lastName[0]}
+                          </AvatarFallback>
+                        </Avatar>
                       </div>
                       
-                      <p className="text-sm text-muted-foreground truncate">
-                        {conversation.lastMessage}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold truncate">
+                            {conversation.otherUser.firstName} {conversation.otherUser.lastName}
+                          </h3>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(conversation.lastMessage?.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground truncate">
+                          {conversation.lastMessage?.content || "No messages yet"}
+                        </p>
+                      </div>
+                      
+                      {conversation.unreadCount > 0 && (
+                        <Badge className="ml-2 bg-primary text-primary-foreground">
+                          {conversation.unreadCount}
+                        </Badge>
+                      )}
                     </div>
-                    
-                    {conversation.unreadCount > 0 && (
-                      <Badge className="ml-2 bg-primary text-primary-foreground">
-                        {conversation.unreadCount}
-                      </Badge>
-                    )}
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </ScrollArea>
         </div>
@@ -213,22 +216,19 @@ const Messages = () => {
                     
                     <div className="relative">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={currentChat.user.avatar} alt="Avatar" />
+                        <AvatarImage src={currentChat.otherUser.photos?.[0] || mustacheLogo} alt="Avatar" />
                         <AvatarFallback>
-                          {currentChat.user.firstName[0]}{currentChat.user.lastName[0]}
+                          {currentChat.otherUser.firstName[0]}{currentChat.otherUser.lastName[0]}
                         </AvatarFallback>
                       </Avatar>
-                      {currentChat.user.isOnline && (
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
-                      )}
                     </div>
                     
                     <div>
                       <h2 className="font-semibold">
-                        {currentChat.user.firstName} {currentChat.user.lastName}
+                        {currentChat.otherUser.firstName} {currentChat.otherUser.lastName}
                       </h2>
                       <p className="text-sm text-muted-foreground">
-                        {currentChat.user.isOnline ? "Online" : currentChat.user.lastSeen}
+                        Active now
                       </p>
                     </div>
                   </div>
@@ -250,23 +250,23 @@ const Messages = () => {
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
-                  {mockMessages.map((message) => (
+                  {messages.map((message) => (
                     <div
-                      key={message.id}
-                      className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
+                      key={message._id}
+                      className={`flex ${message.sender._id === user?.id ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
                         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.isOwn
+                          message.sender._id === user?.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted text-foreground'
                         }`}
                       >
-                        <p className="text-sm">{message.text}</p>
+                        <p className="text-sm">{message.content}</p>
                         <p className={`text-xs mt-1 ${
-                          message.isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          message.sender._id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
                         }`}>
-                          {message.timestamp}
+                          {new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </p>
                       </div>
                     </div>

@@ -48,7 +48,13 @@ router.get('/', [
     });
   }
 
-  const currentUserId = req.user!.id;
+  const currentUserId = req.user?.id;
+  if (!currentUserId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
   const {
     page = 1,
     limit = 20,
@@ -138,7 +144,7 @@ router.get('/', [
     return true;
   });
 
-  res.json({
+  return res.json({
     success: true,
     data: {
       users: filteredUsers,
@@ -180,7 +186,13 @@ router.get('/search', [
     });
   }
 
-  const currentUserId = req.user.id;
+  const currentUserId = req.user?.id;
+  if (!currentUserId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
   const { q: searchQuery, page = 1, limit = 20 } = req.query;
 
   // Get current user's blocked users and friends
@@ -229,7 +241,7 @@ router.get('/search', [
   const hasNextPage = parseInt(page as string) < totalPages;
   const hasPrevPage = parseInt(page as string) > 1;
 
-  res.json({
+  return res.json({
     success: true,
     data: {
       users,
@@ -250,7 +262,13 @@ router.get('/search', [
 // @desc    Get personalized friend recommendations
 // @access  Private
 router.get('/recommendations', asyncHandler(async (req, res) => {
-  const currentUserId = req.user.id;
+  const currentUserId = req.user?.id;
+  if (!currentUserId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
 
   // Get current user's preferences and data
   const currentUser = await User.findById(currentUserId);
@@ -328,7 +346,7 @@ router.get('/recommendations', asyncHandler(async (req, res) => {
     }
   ]);
 
-  res.json({
+  return res.json({
     success: true,
     data: {
       recommendations,

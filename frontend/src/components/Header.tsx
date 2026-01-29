@@ -3,12 +3,14 @@ import { Menu, X, MessageSquare, Users, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import mustacheLogo from "@/assets/mustache-logo.jpg";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === '/';
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const { user, logout } = useAuth();
 
   const navItems = isHomePage ? [
     { name: "Features", href: "#features" },
@@ -16,6 +18,7 @@ const Header = () => {
     { name: "Community", href: "#community" },
   ] : [
     { name: "Discover", href: "/discover", icon: Users },
+    { name: "Friends", href: "/friends", icon: Users },
     { name: "Messages", href: "/messages", icon: MessageSquare },
     { name: "Profile", href: "/profile", icon: User },
   ];
@@ -84,6 +87,16 @@ const Header = () => {
                 </Button>
               </Link>
             )}
+            {!isHomePage && user && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-primary text-primary hover:bg-primary/10 text-sm"
+                onClick={logout}
+              >
+                Log Out
+              </Button>
+            )}
           </div>
 
           <Button
@@ -144,6 +157,18 @@ const Header = () => {
                     Home
                   </Button>
                 </Link>
+              )}
+              {!isHomePage && user && (
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10 w-full justify-center"
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Log Out
+                </Button>
               )}
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,19 +12,46 @@ import {
   Camera, Settings, Heart, Users, MessageSquare, Activity
 } from "lucide-react";
 import mustacheLogo from "@/assets/mustache-logo.jpg";
+import { apiRequest } from "@/lib/api";
+import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/AuthContext";
+
+type ProfileUser = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  dateOfBirth?: string;
+  location?: string;
+  bio?: string;
+  interests?: string[];
+  photos?: string[];
+  age?: number;
+  privacySettings?: {
+    profileVisibility: "public" | "friends" | "private";
+    showOnlineStatus: boolean;
+    allowFriendRequests: boolean;
+  };
+};
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { refresh } = useAuth();
   const [profileData, setProfileData] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    dateOfBirth: "1990-05-15",
-    location: "San Francisco, CA",
-    bio: "Passionate about fitness, technology, and building meaningful connections. Always up for a good conversation and new adventures.",
-    interests: ["Fitness", "Technology", "Travel", "Music"],
+    firstName: "",
+    lastName: "",
+    email: "",
+    dateOfBirth: "",
+    location: "",
+    bio: "",
+    interests: [] as string[],
     photos: [mustacheLogo],
-    age: 33
+    age: 0,
+    privacySettings: {
+      profileVisibility: "public",
+      showOnlineStatus: true,
+      allowFriendRequests: true
+    }
   });
 
   const [newInterest, setNewInterest] = useState("");
@@ -50,10 +77,91 @@ const Profile = () => {
     }));
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // TODO: Save to backend
+  const loadProfile = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest<{ data: { user: ProfileUser } }>("/api/users/profile");
+      const user = response.data.user;
+      setProfileData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : "",
+        location: user.location || "",
+        bio: user.bio || "",
+        interests: user.interests || [],
+        photos: user.photos && user.photos.length > 0 ? user.photos : [mustacheLogo],
+        age: user.age || 0,
+        privacySettings: user.privacySettings || {
+          profileVisibility: "public",
+          showOnlineStatus: true,
+          allowFriendRequests: true
+        }
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load profile";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest<{ data: { user: ProfileUser } }>("/api/users/profile", {
+        method: "PUT",
+        body: {
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          bio: profileData.bio,
+          location: profileData.location,
+          interests: profileData.interests
+        }
+      });
+      setProfileData((prev) => ({
+        ...prev,
+        ...response.data.user
+      }));
+      await refresh();
+      toast.success("Profile updated successfully");
+      setIsEditing(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update profile";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePrivacyChange = async (updates: { profileVisibility?: string; showOnlineStatus?: boolean; allowFriendRequests?: boolean }) => {
+    try {
+      const response = await apiRequest<{ data: { user: ProfileUser } }>("/api/users/privacy", {
+        method: "PUT",
+        body: updates
+      });
+      setProfileData((prev) => ({
+        ...prev,
+        privacySettings: response.data.user.privacySettings
+      }));
+      toast.success("Privacy settings updated");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update privacy settings";
+      toast.error(message);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading profile...</p>
+      </div>
+    );
+  }
 
   const stats = [
     { label: "Friends", value: "24", icon: Users },
@@ -341,19 +449,33 @@ const Profile = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Profile Visibility</span>
-                      <select className="p-2 bg-muted border border-border rounded-md text-sm">
-                        <option>Public</option>
-                        <option>Friends Only</option>
-                        <option>Private</option>
+                      <select
+                        className="p-2 bg-muted border border-border rounded-md text-sm"
+                        value={profileData.privacySettings.profileVisibility}
+                        onChange={(e) => handlePrivacyChange({ profileVisibility: e.target.value })}
+                      >
+                        <option value="public">Public</option>
+                        <option value="friends">Friends Only</option>
+                        <option value="private">Private</option>
                       </select>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Show Online Status</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
+                      <input
+                        type="checkbox"
+                        checked={profileData.privacySettings.showOnlineStatus}
+                        onChange={(e) => handlePrivacyChange({ showOnlineStatus: e.target.checked })}
+                        className="rounded"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Allow Friend Requests</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
+                      <input
+                        type="checkbox"
+                        checked={profileData.privacySettings.allowFriendRequests}
+                        onChange={(e) => handlePrivacyChange({ allowFriendRequests: e.target.checked })}
+                        className="rounded"
+                      />
                     </div>
                   </div>
                 </div>

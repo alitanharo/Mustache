@@ -1,20 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { 
   Search, Filter, MapPin, Calendar, Users, Heart, MessageSquare, 
   Star, X, ChevronLeft, ChevronRight, Settings
 } from "lucide-react";
 import mustacheLogo from "@/assets/mustache-logo.jpg";
+import { apiRequest } from "@/lib/api";
+import { toast } from "@/components/ui/sonner";
+
+type DiscoverUser = {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  age?: number;
+  location?: string;
+  bio?: string;
+  interests?: string[];
+  photos?: string[];
+  matchScore?: number;
+};
 
 const Discover = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     ageRange: [25, 45],
     distance: 50,
@@ -22,48 +37,7 @@ const Discover = () => {
     location: ""
   });
 
-  // Mock user data - in real app this would come from backend
-  const mockUsers = [
-    {
-      id: 1,
-      firstName: "Michael",
-      lastName: "Chen",
-      age: 32,
-      location: "San Francisco, CA",
-      distance: "2.3 miles",
-      bio: "Tech enthusiast who loves hiking and craft beer. Looking for friends to explore the Bay Area with.",
-      interests: ["Technology", "Hiking", "Beer", "Photography"],
-      photos: [mustacheLogo],
-      compatibility: 87,
-      mutualInterests: 3
-    },
-    {
-      id: 2,
-      firstName: "David",
-      lastName: "Rodriguez",
-      age: 28,
-      location: "Oakland, CA",
-      distance: "5.1 miles",
-      bio: "Fitness coach and foodie. Always up for trying new restaurants or hitting the gym together.",
-      interests: ["Fitness", "Food", "Travel", "Music"],
-      photos: [mustacheLogo],
-      compatibility: 92,
-      mutualInterests: 4
-    },
-    {
-      id: 3,
-      firstName: "Alex",
-      lastName: "Thompson",
-      age: 35,
-      location: "Berkeley, CA",
-      distance: "8.7 miles",
-      bio: "Software engineer by day, musician by night. Looking for friends who share my passion for both tech and music.",
-      interests: ["Technology", "Music", "Gaming", "Coffee"],
-      photos: [mustacheLogo],
-      compatibility: 78,
-      mutualInterests: 2
-    }
-  ];
+  const [users, setUsers] = useState<DiscoverUser[]>([]);
 
   const allInterests = [
     "Sports", "Gaming", "Fitness", "Music", "Travel", "Food", "Technology", 
@@ -71,7 +45,39 @@ const Discover = () => {
     "Beer", "Coffee", "Cars", "Fashion", "Pets", "Cooking", "Dancing"
   ];
 
-  const currentUser = mockUsers[currentProfileIndex];
+  const currentUser = users[currentProfileIndex];
+
+  const loadRecommendations = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest<{ data: { recommendations: DiscoverUser[] } }>("/api/discover/recommendations");
+      setUsers(response.data.recommendations || []);
+      setCurrentProfileIndex(0);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load recommendations";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const searchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest<{ data: { users: DiscoverUser[] } }>(`/api/discover/search?q=${encodeURIComponent(searchQuery)}`);
+      setUsers(response.data.users || []);
+      setCurrentProfileIndex(0);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Search failed";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRecommendations();
+  }, []);
 
   const handleInterestToggle = (interest: string) => {
     setFilters(prev => ({
@@ -82,27 +88,32 @@ const Discover = () => {
     }));
   };
 
-  const handleLike = () => {
-    // TODO: Send like to backend
-    nextProfile();
+  const handleLike = async () => {
+    if (!currentUser) return;
+    try {
+      await apiRequest(`/api/friends/request/${currentUser._id}`, { method: "POST" });
+      toast.success("Friend request sent!");
+      nextProfile();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send request";
+      toast.error(message);
+    }
   };
 
   const handlePass = () => {
-    // TODO: Send pass to backend
     nextProfile();
   };
 
   const handleMessage = () => {
-    // TODO: Navigate to messages
-    console.log("Open chat with", currentUser.firstName);
+    toast.info("Open the Messages page to start chatting.");
   };
 
   const nextProfile = () => {
-    setCurrentProfileIndex((prev) => (prev + 1) % mockUsers.length);
+    setCurrentProfileIndex((prev) => (users.length ? (prev + 1) % users.length : 0));
   };
 
   const prevProfile = () => {
-    setCurrentProfileIndex((prev) => (prev - 1 + mockUsers.length) % mockUsers.length);
+    setCurrentProfileIndex((prev) => (users.length ? (prev - 1 + users.length) % users.length : 0));
   };
 
   return (
@@ -222,133 +233,149 @@ const Discover = () => {
                 <Input
                   placeholder="Search by interests, location, or keywords..."
                   className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      searchUsers();
+                    }
+                  }}
                 />
               </div>
             </div>
 
             {/* Profile Card */}
-            <Card className="max-w-2xl mx-auto">
-              <CardContent className="p-0">
-                {/* Profile Image */}
-                <div className="relative">
-                  <img
-                    src={currentUser.photos[0]}
-                    alt={`${currentUser.firstName} ${currentUser.lastName}`}
-                    className="w-full h-96 object-cover rounded-t-lg"
-                  />
-                  
-                  {/* Compatibility Badge */}
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-primary text-primary-foreground">
-                      <Star className="h-3 w-3 mr-1" />
-                      {currentUser.compatibility}% Match
-                    </Badge>
-                  </div>
+            {isLoading ? (
+              <div className="text-center text-muted-foreground">Loading profiles...</div>
+            ) : !currentUser ? (
+              <div className="text-center text-muted-foreground">No profiles found. Try another search.</div>
+            ) : (
+              <Card className="max-w-2xl mx-auto">
+                <CardContent className="p-0">
+                  {/* Profile Image */}
+                  <div className="relative">
+                    <img
+                      src={currentUser.photos?.[0] || mustacheLogo}
+                      alt={`${currentUser.firstName} ${currentUser.lastName}`}
+                      className="w-full h-96 object-cover rounded-t-lg"
+                    />
 
-                  {/* Navigation Arrows */}
-                  <div className="absolute inset-y-0 left-0 flex items-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={prevProfile}
-                      className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </Button>
-                  </div>
-                  
-                  <div className="absolute inset-y-0 right-0 flex items-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={nextProfile}
-                      className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Profile Info */}
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-2xl font-bold">
-                        {currentUser.firstName} {currentUser.lastName}
-                      </h2>
-                      <div className="flex items-center space-x-4 text-muted-foreground mt-1">
-                        <span className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {currentUser.age} years old
-                        </span>
-                        <span className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {currentUser.location}
-                        </span>
-                        <span className="flex items-center">
-                          <Users className="h-4 w-4 mr-1" />
-                          {currentUser.distance} away
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Badge variant="outline" className="text-primary border-primary">
-                      {currentUser.mutualInterests} mutual interests
-                    </Badge>
-                  </div>
-
-                  <p className="text-muted-foreground mb-4 leading-relaxed">
-                    {currentUser.bio}
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {currentUser.interests.map((interest) => (
-                      <Badge key={interest} variant="secondary">
-                        {interest}
+                    {/* Compatibility Badge */}
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-primary text-primary-foreground">
+                        <Star className="h-3 w-3 mr-1" />
+                        {currentUser.matchScore || 0}% Match
                       </Badge>
-                    ))}
+                    </div>
+
+                    {/* Navigation Arrows */}
+                    <div className="absolute inset-y-0 left-0 flex items-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={prevProfile}
+                        className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white"
+                      >
+                        <ChevronLeft className="h-6 w-6" />
+                      </Button>
+                    </div>
+
+                    <div className="absolute inset-y-0 right-0 flex items-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={nextProfile}
+                        className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white"
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </Button>
+                    </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={handlePass}
-                      className="flex-1 border-muted-foreground text-muted-foreground hover:bg-muted"
-                    >
-                      <X className="h-5 w-5 mr-2" />
-                      Pass
-                    </Button>
-                    
-                    <Button
-                      size="lg"
-                      onClick={handleMessage}
-                      className="flex-1 bg-gradient-primary hover:shadow-glow"
-                    >
-                      <MessageSquare className="h-5 w-5 mr-2" />
-                      Message
-                    </Button>
-                    
-                    <Button
-                      size="lg"
-                      onClick={handleLike}
-                      className="flex-1 bg-gradient-primary hover:shadow-glow"
-                    >
-                      <Heart className="h-5 w-5 mr-2" />
-                      Like
-                    </Button>
+                  {/* Profile Info */}
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h2 className="text-2xl font-bold">
+                          {currentUser.firstName} {currentUser.lastName}
+                        </h2>
+                        <div className="flex items-center space-x-4 text-muted-foreground mt-1">
+                          <span className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {currentUser.age} years old
+                          </span>
+                          <span className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {currentUser.location}
+                          </span>
+                          <span className="flex items-center">
+                            <Users className="h-4 w-4 mr-1" />
+                            {filters.distance} miles away
+                          </span>
+                        </div>
+                      </div>
+
+                      <Badge variant="outline" className="text-primary border-primary">
+                        {currentUser.interests?.length || 0} interests
+                      </Badge>
+                    </div>
+
+                    <p className="text-muted-foreground mb-4 leading-relaxed">
+                      {currentUser.bio}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {currentUser.interests?.map((interest: string) => (
+                        <Badge key={interest} variant="secondary">
+                          {interest}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={handlePass}
+                        className="flex-1 border-muted-foreground text-muted-foreground hover:bg-muted"
+                      >
+                        <X className="h-5 w-5 mr-2" />
+                        Pass
+                      </Button>
+
+                      <Button
+                        size="lg"
+                        onClick={handleMessage}
+                        className="flex-1 bg-gradient-primary hover:shadow-glow"
+                      >
+                        <MessageSquare className="h-5 w-5 mr-2" />
+                        Message
+                      </Button>
+
+                      <Button
+                        size="lg"
+                        onClick={handleLike}
+                        className="flex-1 bg-gradient-primary hover:shadow-glow"
+                      >
+                        <Heart className="h-5 w-5 mr-2" />
+                        Like
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Profile Counter */}
-            <div className="text-center mt-6">
-              <p className="text-muted-foreground">
-                Profile {currentProfileIndex + 1} of {mockUsers.length}
-              </p>
-            </div>
+            {currentUser && (
+              <div className="text-center mt-6">
+                <p className="text-muted-foreground">
+                  Profile {currentProfileIndex + 1} of {users.length}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

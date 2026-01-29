@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, MapPin, Calendar, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import mustacheLogo from "@/assets/mustache-logo.jpg";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/components/ui/sonner";
 
 const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -21,6 +23,8 @@ const Register = () => {
     location: "",
     interests: [] as string[]
   });
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   const interests = [
     "Sports", "Gaming", "Fitness", "Music", "Travel", "Food", "Technology", 
@@ -51,11 +55,37 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // TODO: Implement registration logic with backend
-    setTimeout(() => {
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
       setIsLoading(false);
-    }, 2000);
+      return;
+    }
+
+    if (formData.interests.length < 3) {
+      toast.error("Please select at least 3 interests");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        dateOfBirth: formData.dateOfBirth,
+        location: formData.location,
+        interests: formData.interests
+      });
+      toast.success("Account created successfully!");
+      navigate("/discover");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Registration failed";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderStep1 = () => (

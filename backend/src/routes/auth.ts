@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { asyncHandler } from '../middleware/errorHandler';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -12,7 +13,6 @@ const generateToken = (userId: string): string => {
   if (!secret) {
     throw new Error('JWT_SECRET is not defined');
   }
-
   return jwt.sign(
     { userId },
     secret as jwt.Secret,
@@ -71,7 +71,7 @@ router.post('/register', [
   } = req.body;
 
   // Check if user already exists
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ email }).exec();
   if (existingUser) {
     res.status(400).json({
       success: false,
@@ -144,7 +144,7 @@ router.post('/login', [
   const { email, password } = req.body;
 
   // Check if user exists
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).exec();
   if (!user) {
     res.status(401).json({
       success: false,
@@ -198,10 +198,12 @@ router.post('/login', [
 // @route   POST /api/auth/logout
 // @desc    Logout user
 // @access  Private
-router.post('/logout', asyncHandler(async (req: Request, res: Response) => {
-  // This endpoint would typically be called when user logs out
-  // You might want to add token blacklisting here in the future
-  
+router.post('/logout', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+  // Mark user offline (best-effort). Token invalidation/blacklisting could be added later.
+  await User.findByIdAndUpdate(req.user!.id, {
+    $set: { isOnline: false, lastSeen: new Date() }
+  });
+
   res.json({
     success: true,
     message: 'Logout successful'
@@ -211,10 +213,7 @@ router.post('/logout', asyncHandler(async (req: Request, res: Response) => {
 // @route   GET /api/auth/me
 // @desc    Get current user profile
 // @access  Private
-router.get('/me', asyncHandler(async (req: Request, res: Response) => {
-  // This will be protected by auth middleware
-  // req.user will contain the authenticated user
-  
+router.get('/me', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
   res.json({
     success: true,
     data: {

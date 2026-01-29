@@ -7,7 +7,7 @@ const router = express.Router();
 // @route   GET /api/friends
 // @desc    Get user's friends list
 // @access  Private
-router.get('/', asyncHandler(async (req: Request, res: Response) => {
+router.get('/', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = await User.findById(req.user!.id)
     .populate('friends', 'firstName lastName age location bio interests photos isOnline lastSeen')
     .select('friends');
@@ -21,7 +21,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 // @route   GET /api/friends/requests
 // @desc    Get incoming friend requests
 // @access  Private
-router.get('/requests', asyncHandler(async (req: Request, res: Response) => {
+router.get('/requests', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = await User.findById(req.user!.id)
     .populate('friendRequests', 'firstName lastName age location bio interests photos')
     .select('friendRequests');
@@ -35,7 +35,7 @@ router.get('/requests', asyncHandler(async (req: Request, res: Response) => {
 // @route   GET /api/friends/sent
 // @desc    Get sent friend requests
 // @access  Private
-router.get('/sent', asyncHandler(async (req: Request, res: Response) => {
+router.get('/sent', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = await User.findById(req.user!.id)
     .populate('sentFriendRequests', 'firstName lastName age location bio interests photos')
     .select('sentFriendRequests');
@@ -49,59 +49,72 @@ router.get('/sent', asyncHandler(async (req: Request, res: Response) => {
 // @route   POST /api/friends/request/:userId
 // @desc    Send friend request
 // @access  Private
-router.post('/request/:userId', asyncHandler(async (req: Request, res: Response) => {
+router.post('/request/:userId', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const targetUserId = req.params.userId;
   const currentUserId = req.user!.id;
 
   // Check if trying to send request to self
   if (targetUserId === currentUserId) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: 'Cannot send friend request to yourself'
     });
+    return;
   }
 
   // Check if target user exists
   const targetUser = await User.findById(targetUserId);
   if (!targetUser) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: 'User not found'
     });
+    return;
   }
 
   // Check if target user allows friend requests
   if (!targetUser.privacySettings.allowFriendRequests) {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       error: 'This user is not accepting friend requests'
     });
+    return;
   }
 
   const currentUser = await User.findById(currentUserId);
+  if (!currentUser) {
+    res.status(404).json({
+      success: false,
+      error: 'Current user not found'
+    });
+    return;
+  }
 
   // Check if already friends
-  if (currentUser.friends.includes(targetUserId)) {
-    return res.status(400).json({
+  if (currentUser.friends.some(id => id.toString() === targetUserId)) {
+    res.status(400).json({
       success: false,
       error: 'You are already friends with this user'
     });
+    return;
   }
 
   // Check if request already sent
-  if (currentUser.sentFriendRequests.includes(targetUserId)) {
-    return res.status(400).json({
+  if (currentUser.sentFriendRequests.some(id => id.toString() === targetUserId)) {
+    res.status(400).json({
       success: false,
       error: 'Friend request already sent'
     });
+    return;
   }
 
   // Check if request already received
-  if (currentUser.friendRequests.includes(targetUserId)) {
-    return res.status(400).json({
+  if (currentUser.friendRequests.some(id => id.toString() === targetUserId)) {
+    res.status(400).json({
       success: false,
       error: 'This user has already sent you a friend request'
     });
+    return;
   }
 
   // Add to sent requests for current user
@@ -123,18 +136,26 @@ router.post('/request/:userId', asyncHandler(async (req: Request, res: Response)
 // @route   POST /api/friends/accept/:userId
 // @desc    Accept friend request
 // @access  Private
-router.post('/accept/:userId', asyncHandler(async (req: Request, res: Response) => {
+router.post('/accept/:userId', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const senderUserId = req.params.userId;
   const currentUserId = req.user!.id;
 
   const currentUser = await User.findById(currentUserId);
+  if (!currentUser) {
+    res.status(404).json({
+      success: false,
+      error: 'Current user not found'
+    });
+    return;
+  }
 
   // Check if request exists
-  if (!currentUser!.friendRequests.some(id => id.toString() === senderUserId)) {
-    return res.status(400).json({
+  if (!currentUser.friendRequests.some(id => id.toString() === senderUserId)) {
+    res.status(400).json({
       success: false,
       error: 'No friend request from this user'
     });
+    return;
   }
 
   // Remove from friend requests
@@ -165,18 +186,26 @@ router.post('/accept/:userId', asyncHandler(async (req: Request, res: Response) 
 // @route   POST /api/friends/reject/:userId
 // @desc    Reject friend request
 // @access  Private
-router.post('/reject/:userId', asyncHandler(async (req: Request, res: Response) => {
+router.post('/reject/:userId', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const senderUserId = req.params.userId;
   const currentUserId = req.user!.id;
 
   const currentUser = await User.findById(currentUserId);
+  if (!currentUser) {
+    res.status(404).json({
+      success: false,
+      error: 'Current user not found'
+    });
+    return;
+  }
 
   // Check if request exists
-  if (!currentUser!.friendRequests.some(id => id.toString() === senderUserId)) {
-    return res.status(400).json({
+  if (!currentUser.friendRequests.some(id => id.toString() === senderUserId)) {
+    res.status(400).json({
       success: false,
       error: 'No friend request from this user'
     });
+    return;
   }
 
   // Remove from friend requests
@@ -200,12 +229,25 @@ router.post('/reject/:userId', asyncHandler(async (req: Request, res: Response) 
 // @access  Private
 router.delete('/:userId', asyncHandler(async (req: Request, res: Response) => {
   const friendUserId = req.params.userId;
-  const currentUserId = req.user.id;
+  const currentUserId = req.user?.id;
+
+  if (!currentUserId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
 
   const currentUser = await User.findById(currentUserId);
+  if (!currentUser) {
+    return res.status(404).json({
+      success: false,
+      error: 'Current user not found'
+    });
+  }
 
   // Check if they are friends
-  if (!currentUser.friends.includes(friendUserId)) {
+  if (!currentUser.friends.some(id => id.toString() === friendUserId)) {
     return res.status(400).json({
       success: false,
       error: 'This user is not your friend'
@@ -221,7 +263,7 @@ router.delete('/:userId', asyncHandler(async (req: Request, res: Response) => {
     $pull: { friends: currentUserId }
   });
 
-  res.json({
+  return res.json({
     success: true,
     message: 'Friend removed successfully'
   });
@@ -232,12 +274,25 @@ router.delete('/:userId', asyncHandler(async (req: Request, res: Response) => {
 // @access  Private
 router.post('/cancel/:userId', asyncHandler(async (req: Request, res: Response) => {
   const targetUserId = req.params.userId;
-  const currentUserId = req.user.id;
+  const currentUserId = req.user?.id;
+
+  if (!currentUserId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
 
   const currentUser = await User.findById(currentUserId);
+  if (!currentUser) {
+    return res.status(404).json({
+      success: false,
+      error: 'Current user not found'
+    });
+  }
 
   // Check if request was sent
-  if (!currentUser.sentFriendRequests.includes(targetUserId)) {
+  if (!currentUser.sentFriendRequests.some(id => id.toString() === targetUserId)) {
     return res.status(400).json({
       success: false,
       error: 'No friend request sent to this user'
@@ -254,7 +309,7 @@ router.post('/cancel/:userId', asyncHandler(async (req: Request, res: Response) 
     $pull: { friendRequests: currentUserId }
   });
 
-  res.json({
+  return res.json({
     success: true,
     message: 'Friend request cancelled successfully'
   });
@@ -265,7 +320,14 @@ router.post('/cancel/:userId', asyncHandler(async (req: Request, res: Response) 
 // @access  Private
 router.post('/block/:userId', asyncHandler(async (req: Request, res: Response) => {
   const targetUserId = req.params.userId;
-  const currentUserId = req.user.id;
+  const currentUserId = req.user?.id;
+
+  if (!currentUserId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
 
   // Check if trying to block self
   if (targetUserId === currentUserId) {
@@ -276,9 +338,15 @@ router.post('/block/:userId', asyncHandler(async (req: Request, res: Response) =
   }
 
   const currentUser = await User.findById(currentUserId);
+  if (!currentUser) {
+    return res.status(404).json({
+      success: false,
+      error: 'Current user not found'
+    });
+  }
 
   // Check if already blocked
-  if (currentUser.blockedUsers.includes(targetUserId)) {
+  if (currentUser.blockedUsers.some(id => id.toString() === targetUserId)) {
     return res.status(400).json({
       success: false,
       error: 'User is already blocked'
@@ -286,7 +354,7 @@ router.post('/block/:userId', asyncHandler(async (req: Request, res: Response) =
   }
 
   // Remove from friends if they were friends
-  if (currentUser.friends.includes(targetUserId)) {
+  if (currentUser.friends.some(id => id.toString() === targetUserId)) {
     await User.findByIdAndUpdate(currentUserId, {
       $pull: { friends: targetUserId }
     });
@@ -297,7 +365,7 @@ router.post('/block/:userId', asyncHandler(async (req: Request, res: Response) =
   }
 
   // Remove from friend requests if any
-  if (currentUser.friendRequests.includes(targetUserId)) {
+  if (currentUser.friendRequests.some(id => id.toString() === targetUserId)) {
     await User.findByIdAndUpdate(currentUserId, {
       $pull: { friendRequests: targetUserId }
     });
@@ -308,7 +376,7 @@ router.post('/block/:userId', asyncHandler(async (req: Request, res: Response) =
   }
 
   // Remove from sent friend requests if any
-  if (currentUser.sentFriendRequests.includes(targetUserId)) {
+  if (currentUser.sentFriendRequests.some(id => id.toString() === targetUserId)) {
     await User.findByIdAndUpdate(currentUserId, {
       $pull: { sentFriendRequests: targetUserId }
     });
@@ -323,7 +391,7 @@ router.post('/block/:userId', asyncHandler(async (req: Request, res: Response) =
     $push: { blockedUsers: targetUserId }
   });
 
-  res.json({
+  return res.json({
     success: true,
     message: 'User blocked successfully'
   });
@@ -334,12 +402,25 @@ router.post('/block/:userId', asyncHandler(async (req: Request, res: Response) =
 // @access  Private
 router.post('/unblock/:userId', asyncHandler(async (req: Request, res: Response) => {
   const targetUserId = req.params.userId;
-  const currentUserId = req.user.id;
+  const currentUserId = req.user?.id;
+
+  if (!currentUserId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized'
+    });
+  }
 
   const currentUser = await User.findById(currentUserId);
+  if (!currentUser) {
+    return res.status(404).json({
+      success: false,
+      error: 'Current user not found'
+    });
+  }
 
   // Check if user is blocked
-  if (!currentUser.blockedUsers.includes(targetUserId)) {
+  if (!currentUser.blockedUsers.some(id => id.toString() === targetUserId)) {
     return res.status(400).json({
       success: false,
       error: 'User is not blocked'
@@ -351,7 +432,7 @@ router.post('/unblock/:userId', asyncHandler(async (req: Request, res: Response)
     $pull: { blockedUsers: targetUserId }
   });
 
-  res.json({
+  return res.json({
     success: true,
     message: 'User unblocked successfully'
   });

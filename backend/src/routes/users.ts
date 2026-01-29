@@ -8,9 +8,9 @@ const router = express.Router();
 // @route   GET /api/users/profile
 // @desc    Get current user profile
 // @access  Private
-router.get('/profile', asyncHandler(async (req: Request, res: Response) => {
+router.get('/profile', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = await User.findById(req.user!.id).select('-password');
-  
+
   res.json({
     success: true,
     data: { user }
@@ -57,7 +57,7 @@ router.put('/profile', [
   }
 
   const updateFields = req.body;
-  
+
   // Remove fields that shouldn't be updated directly
   delete updateFields.email;
   delete updateFields.password;
@@ -219,7 +219,7 @@ router.post('/photos', [
 // @access  Private
 router.delete('/photos/:photoIndex', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const photoIndex = parseInt(req.params.photoIndex);
-  
+
   if (isNaN(photoIndex) || photoIndex < 0) {
     res.status(400).json({
       success: false,

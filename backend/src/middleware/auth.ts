@@ -32,8 +32,15 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     }
 
     try {
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        return res.status(500).json({
+          error: 'Server misconfigured: JWT_SECRET is not defined.'
+        });
+      }
+
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      const decoded = jwt.verify(token, secret) as any;
       
       // Get user from database
       const user = await User.findById(decoded.userId).select('-password');
@@ -44,16 +51,10 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         });
       }
 
-      // Check if user is blocked or deleted
-      if (user.blockedUsers || user.privacySettings?.profileVisibility === 'private') {
-        return res.status(403).json({ 
-          error: 'Access denied. User account is restricted.' 
-        });
-      }
-
       // Add user to request object
       req.user = user;
       next();
+      return;
     } catch (error) {
       return res.status(401).json({ 
         error: 'Invalid token.' 
@@ -76,7 +77,12 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       const token = authHeader.substring(7);
       
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+          return next();
+        }
+
+        const decoded = jwt.verify(token, secret) as any;
         const user = await User.findById(decoded.userId).select('-password');
         
         if (user) {
