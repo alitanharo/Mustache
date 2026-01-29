@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User';
 import { asyncHandler } from '../middleware/errorHandler';
+import Message from '../models/Message';
 
 const router = express.Router();
 
@@ -186,8 +187,8 @@ router.put('/preferences', [
 // @access  Private
 router.post('/photos', [
   body('photoUrl')
-    .isURL()
-    .withMessage('Please provide a valid photo URL')
+    .notEmpty()
+    .withMessage('Please provide a photo')
 ], asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Check for validation errors
   const errors = validationResult(req);
@@ -252,6 +253,42 @@ router.delete('/photos/:photoIndex', asyncHandler(async (req: Request, res: Resp
     success: true,
     message: 'Photo removed successfully',
     data: { user: user.toJSON() }
+  });
+}));
+
+// @route   DELETE /api/users/account
+// @desc    Delete current user account
+// @access  Private
+router.delete('/account', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+
+  await Promise.all([
+    Message.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] }),
+    User.updateMany(
+      {
+        $or: [
+          { friends: userId },
+          { friendRequests: userId },
+          { sentFriendRequests: userId },
+          { blockedUsers: userId }
+        ]
+      },
+      {
+        $pull: {
+          friends: userId,
+          friendRequests: userId,
+          sentFriendRequests: userId,
+          blockedUsers: userId
+        }
+      }
+    )
+  ]);
+
+  await User.findByIdAndDelete(userId);
+
+  res.json({
+    success: true,
+    message: 'Account deleted successfully'
   });
 }));
 

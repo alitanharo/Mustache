@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,8 @@ import {
 import mustacheLogo from "@/assets/mustache-logo.jpg";
 import { apiRequest } from "@/lib/api";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 type DiscoverUser = {
   _id: string;
@@ -30,6 +32,8 @@ const Discover = () => {
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     ageRange: [25, 45],
     distance: 50,
@@ -46,6 +50,23 @@ const Discover = () => {
   ];
 
   const currentUser = users[currentProfileIndex];
+  const preferencesQuery = useMemo(() => {
+    const params = new URLSearchParams();
+
+    params.set("ageMin", String(filters.ageRange[0]));
+    params.set("ageMax", String(filters.ageRange[1]));
+    params.set("maxDistance", String(filters.distance));
+
+    if (filters.location.trim()) {
+      params.set("location", filters.location.trim());
+    }
+
+    if (filters.interests.length > 0) {
+      params.set("interests", filters.interests.join(","));
+    }
+
+    return params;
+  }, [filters]);
 
   const loadRecommendations = async () => {
     try {
@@ -75,9 +96,57 @@ const Discover = () => {
     }
   };
 
+  const applyFilters = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest<{ data: { users: DiscoverUser[] } }>(`/api/discover?${preferencesQuery.toString()}`);
+      setUsers(response.data.users || []);
+      setCurrentProfileIndex(0);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to apply filters";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const savePreferences = async () => {
+    try {
+      await apiRequest("/api/users/preferences", {
+        method: "PUT",
+        body: {
+          ageRange: {
+            min: filters.ageRange[0],
+            max: filters.ageRange[1]
+          },
+          maxDistance: filters.distance,
+          interests: filters.interests
+        }
+      });
+      toast.success("Preferences saved");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save preferences";
+      toast.error(message);
+    }
+  };
+
   useEffect(() => {
     loadRecommendations();
   }, []);
+
+  useEffect(() => {
+    if (user?.preferences) {
+      setFilters((prev) => ({
+        ...prev,
+        ageRange: [
+          user.preferences?.ageRange?.min ?? prev.ageRange[0],
+          user.preferences?.ageRange?.max ?? prev.ageRange[1]
+        ],
+        distance: user.preferences?.maxDistance ?? prev.distance,
+        interests: user.preferences?.interests ?? prev.interests
+      }));
+    }
+  }, [user]);
 
   const handleInterestToggle = (interest: string) => {
     setFilters(prev => ({
@@ -105,7 +174,7 @@ const Discover = () => {
   };
 
   const handleMessage = () => {
-    toast.info("Open the Messages page to start chatting.");
+    navigate("/messages");
   };
 
   const nextProfile = () => {
@@ -137,7 +206,7 @@ const Discover = () => {
               <Filter className="h-4 w-4 mr-2" />
               Filters
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={savePreferences}>
               <Settings className="h-4 w-4 mr-2" />
               Preferences
             </Button>
@@ -216,7 +285,10 @@ const Discover = () => {
                     </div>
                   </div>
 
-                  <Button className="w-full bg-gradient-primary hover:shadow-glow">
+                  <Button
+                    className="w-full bg-gradient-primary hover:shadow-glow"
+                    onClick={applyFilters}
+                  >
                     Apply Filters
                   </Button>
                 </CardContent>

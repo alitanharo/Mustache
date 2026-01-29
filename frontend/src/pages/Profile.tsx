@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +55,7 @@ const Profile = () => {
   });
 
   const [newInterest, setNewInterest] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
@@ -152,6 +153,73 @@ const Profile = () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update privacy settings";
       toast.error(message);
+    }
+  };
+
+  const handlePhotoAdd = async (file?: File | null) => {
+    if (!file) return;
+
+    try {
+      setIsLoading(true);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+
+      const response = await apiRequest<{ data: { user: ProfileUser } }>("/api/users/photos", {
+        method: "POST",
+        body: { photoUrl: base64 }
+      });
+
+      setProfileData((prev) => ({
+        ...prev,
+        photos: response.data.user.photos || []
+      }));
+      toast.success("Photo added successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to add photo";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePhotoRemove = async (photoIndex: number) => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest<{ data: { user: ProfileUser } }>(`/api/users/photos/${photoIndex}`, {
+        method: "DELETE"
+      });
+
+      setProfileData((prev) => ({
+        ...prev,
+        photos: response.data.user.photos || []
+      }));
+      toast.success("Photo removed successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to remove photo";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm("Are you sure you want to delete your account? This action cannot be undone.");
+    if (!confirmed) return;
+
+    try {
+      setIsLoading(true);
+      await apiRequest("/api/users/account", { method: "DELETE" });
+      toast.success("Account deleted");
+      await refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete account";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -405,6 +473,18 @@ const Profile = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    handlePhotoAdd(event.target.files?.[0] || null);
+                    if (event.target) {
+                      event.target.value = "";
+                    }
+                  }}
+                />
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {profileData.photos.map((photo, index) => (
                     <div key={index} className="relative group">
@@ -414,7 +494,10 @@ const Profile = () => {
                         className="w-full h-32 object-cover rounded-lg"
                       />
                       {isEditing && (
-                        <button className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handlePhotoRemove(index)}
+                        >
                           <X className="h-4 w-4" />
                         </button>
                       )}
@@ -422,7 +505,10 @@ const Profile = () => {
                   ))}
                   
                   {isEditing && (
-                    <button className="w-full h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground hover:border-primary transition-colors">
+                    <button
+                      className="w-full h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground hover:border-primary transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <Camera className="h-8 w-8 mr-2" />
                       Add Photo
                     </button>
@@ -481,7 +567,7 @@ const Profile = () => {
                 </div>
                 
                 <div className="pt-4 border-t border-border">
-                  <Button variant="destructive" className="w-full">
+                  <Button variant="destructive" className="w-full" onClick={handleDeleteAccount}>
                     Delete Account
                   </Button>
                 </div>
