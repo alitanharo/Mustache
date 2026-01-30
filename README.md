@@ -177,6 +177,11 @@ For issues and questions:
 3. Verify environment configuration
 4. Test database connectivity
 
+## 📄 License & Usage
+This repository is provided for demonstration purposes only. All rights reserved.
+No part of this project may be copied, reused, or redistributed without explicit
+written permission from the owner. See [LICENSE](./LICENSE).
+
 ---
 
 **Note**: This is a full-stack social networking application. Both frontend and backend must be running for full functionality.
