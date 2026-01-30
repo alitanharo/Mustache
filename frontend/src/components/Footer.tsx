@@ -1,4 +1,5 @@
 import mustacheLogo from "@/assets/mustache-logo.jpg";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -21,32 +22,32 @@ const Footer = () => {
               activities, and genuine connections. Join our brotherhood today.
             </p>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+              <Link to="/register" className="text-muted-foreground hover:text-primary transition-colors text-sm">
                 Privacy Policy
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+              </Link>
+              <Link to="/register" className="text-muted-foreground hover:text-primary transition-colors text-sm">
                 Terms of Service
-              </a>
+              </Link>
             </div>
           </div>
 
           <div>
             <h4 className="font-semibold mb-3 sm:mb-4 text-base sm:text-lg">Platform</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Download App</a></li>
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Web Version</a></li>
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Safety Guidelines</a></li>
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Community Rules</a></li>
+              <li><Link to="/discover" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Discover</Link></li>
+              <li><Link to="/friends" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Friends</Link></li>
+              <li><Link to="/messages" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Messages</Link></li>
+              <li><Link to="/profile" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Profile</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-3 sm:mb-4 text-base sm:text-lg">Support</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Help Center</a></li>
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Contact Us</a></li>
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Report Issue</a></li>
-              <li><a href="#" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Feedback</a></li>
+              <li><Link to="/login" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Login</Link></li>
+              <li><Link to="/register" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Register</Link></li>
+              <li><Link to="/discover" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Find Friends</Link></li>
+              <li><Link to="/messages" className="text-sm sm:text-base text-muted-foreground hover:text-primary transition-colors">Chat Support</Link></li>
             </ul>
           </div>
         </div>

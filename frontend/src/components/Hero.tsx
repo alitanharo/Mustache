@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, MapPin, Calendar } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-image.jpg";
 
 const Hero = () => {
@@ -29,15 +30,19 @@ const Hero = () => {
             <Button 
               size="lg" 
               className="bg-gradient-primary hover:shadow-glow transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 animate-glow-pulse w-full sm:w-auto"
+              asChild
             >
-              Join Mustache <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+              <Link to="/register">
+                Join Mustache <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+              </Link>
             </Button>
             <Button 
               variant="outline" 
               size="lg" 
               className="border-primary text-primary hover:bg-primary/10 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
+              asChild
             >
-              Watch Demo
+              <Link to="/register">Sign Up</Link>
             </Button>
           </div>
 

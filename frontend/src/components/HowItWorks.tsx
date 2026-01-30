@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, Search, MessageSquare, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HowItWorks = () => {
   const steps = [
@@ -73,8 +74,9 @@ const HowItWorks = () => {
           <Button 
             size="lg" 
             className="bg-gradient-primary hover:shadow-glow transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
+            asChild
           >
-            Start Building Friendships
+            <Link to="/register">Start Building Friendships</Link>
           </Button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, Quote } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Community = () => {
   const testimonials = [
@@ -113,8 +114,9 @@ const Community = () => {
           <Button 
             size="lg" 
             className="bg-gradient-primary hover:shadow-glow transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
+            asChild
           >
-            Join 10,000+ Members
+            <Link to="/register">Join 10,000+ Members</Link>
           </Button>
         </div>
       </div>
