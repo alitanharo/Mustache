@@ -148,9 +148,7 @@ and CORS origin in `.env`.
 - `CORS_ORIGIN` matches your deployed frontend URL
 - `UPLOAD_PATH` exists and is writable (if using file uploads)
 
-### Suggested Hosting
-- **Frontend**: Vercel, Netlify, or any static host
-- **Backend**: Render, Railway, Fly.io, or a VM/Container with PM2
+
 
 ## �📚 Documentation
 
@@ -165,9 +163,7 @@ and CORS origin in `.env`.
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 License
 
-This project is for educational and personal use.
 
 ## 🆘 Support
 
@@ -182,6 +178,5 @@ This repository is provided for demonstration purposes only. All rights reserved
 No part of this project may be copied, reused, or redistributed without explicit
 written permission from the owner. See [LICENSE](./LICENSE).
 
----
 
-**Note**: This is a full-stack social networking application. Both frontend and backend must be running for full functionality.
+
