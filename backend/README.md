@@ -1,6 +1,6 @@
 # Mustache Backend API
 
-A Node.js backend API for the Mustache social networking app - a GoFriendly clone for men.
+A Node.js backend API for the Mustache social networking app for men.
 
 ## 🚀 Features
 
@@ -229,26 +229,9 @@ Configured to handle profile photos and media files with size limits and type va
 4. Use a process manager like PM2 for production deployment
 5. Set up proper logging and monitoring
 
-## 🤝 Contributing
 
-1. Follow the existing code style and structure
-2. Add proper error handling and validation
-3. Include JSDoc comments for complex functions
-4. Test your changes thoroughly
-5. Update documentation as needed
 
 ## 📄 License
 
 This project is part of the Mustache social networking application.
 
-## 🆘 Support
-
-For issues and questions:
-1. Check the API documentation
-2. Review error logs
-3. Verify environment configuration
-4. Test database connectivity
-
----
-
-**Note**: This backend is designed to work with the Mustache frontend application. Ensure both frontend and backend are properly configured and running for full functionality.
